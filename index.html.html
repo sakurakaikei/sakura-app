@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌸さくらの会計🌸</title>
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="さくらの会計">
+    <link rel="apple-touch-icon" href="https://placehold.jp/24/d63031/ffffff/180x180.png?text=🌸">
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root { 
+            --primary: #ffebee; 
+            --primary-light: #fff5f7; 
+            --bg-color: #fcfdfd; 
+            --card-bg: #ffffff; 
+            --text-main: #2d3436; 
+            --text-sub: #636e72; 
+            --income-color: #0984e3; 
+            --expense-color: #d63031; 
+            --border: #dfe6e9; 
+            --danger: #d63031;
+            --btn-history: #b8e994;
+            --btn-setting: #e6be8a;
+            --alert-yellow: #fff9e6;
+            --alert-yellow-border: #ffc107;
+            --alert-red: #fee7e9;
+            --alert-red-border: #dc3545;
+        }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5; color: var(--text-main); margin: 0; padding: 0; overflow-x: hidden; }
+        .app-container { max-width: 600px; margin: 0 auto; min-height: 100vh; background-color: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.05); padding-bottom: 20px; position: relative; }
+        
+        header { background: linear-gradient(135deg, #ffdae0, #fff0f3); color: #d63031; text-align: center; padding: 30px 10px; border-radius: 0 0 30px 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        header h1 { margin: 0; font-size: 26px; font-weight: bold; letter-spacing: 2px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+
+        .view { display: none; padding: 20px; animation: fadeIn 0.3s; position: relative; z-index: 10; }
+        .view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* 桜吹雪アニメーション */
+        .sakura-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; overflow: hidden; }
+        .petal { position: absolute; color: #ffb8c6; font-size: 20px; user-select: none; animation: fall linear infinite; }
+        @keyframes fall {
+            0% { transform: translateY(-10vh) translateX(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(110vh) translateX(100px) rotate(360deg); opacity: 0; }
+        }
+
+        /* ダッシュボード */
+        .summary-card { background: var(--card-bg); border-radius: 25px; padding: 30px 20px; text-align: center; margin: -35px 15px 20px 15px; border: 1px solid var(--border); box-shadow: 0 10px 25px rgba(0,0,0,0.05); position: relative; z-index: 20; }
+        .summary-label { font-size: 13px; color: var(--text-sub); margin-bottom: 10px; }
+        .summary-total { font-size: 42px; font-weight: 900; margin: 0 0 20px 0; color: #2d3436; letter-spacing: -1px; }
+        .summary-hr { border: 0; border-top: 1px solid #f0f0f0; margin: 20px 10px; }
+        .summary-details { display: flex; justify-content: space-around; align-items: center; }
+        .summary-item p { margin: 0 0 5px 0; font-size: 13px; font-weight: bold; color: var(--text-sub); }
+        .summary-item h3 { margin: 0; font-size: 26px; font-weight: 800; }
+
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; }
+        .btn { padding: 16px; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: opacity 0.2s; }
+        .btn:active { opacity: 0.7; }
+        .btn-income { background-color: var(--income-color); }
+        .btn-expense { background-color: var(--expense-color); }
+        .btn-history { background-color: var(--btn-history); color: #2d3436; width: 100%; margin-bottom: 15px; }
+        .btn-setting { background-color: var(--btn-setting); color: #2d3436; width: 100%; }
+
+        /* アラート */
+        .spacer-5lines { height: 80px; }
+        .alert-container { display: flex; flex-direction: column; gap: 12px; }
+        .alert-box { background: var(--alert-yellow); color: #856404; border-left: 8px solid var(--alert-yellow-border); padding: 18px; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .alert-box.danger { background: var(--alert-red); color: #721c24; border-left-color: var(--alert-red-border); }
+
+        /* 履歴表示 */
+        .hist-balance-card { background: #ffeaa7; border: 1px solid #fdcb6e; border-radius: 15px; padding: 15px; text-align: center; margin-bottom: 10px; }
+        .hist-summary-row { font-size: 12px; color: var(--text-sub); display: flex; justify-content: center; gap: 15px; margin-top: 5px; font-weight: bold; }
+        .month-summary-box { background: #e3f2fd; border: 1px solid #74b9ff; border-radius: 10px; padding: 12px; text-align: center; margin-bottom: 15px; font-size: 20px; font-weight: bold; color: #0984e3; }
+        .month-jump-btn { background: #fff; border: 1px solid var(--primary); color: #d63031; padding: 8px 18px; border-radius: 25px; font-size: 14px; font-weight: bold; cursor: pointer; white-space: nowrap; margin-right: 5px; }
+        .month-jump-btn.active { background: #ffb8c6; color: white; }
+
+        .list-item { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 12px; cursor: pointer; }
+        .item-cat { font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: bold; margin-bottom: 6px; display: inline-block; }
+        
+        .form-control { width: 100%; padding: 12px; border: 1px solid #b2bec3; border-radius: 8px; font-size: 16px; box-sizing: border-box; background-color: #fafafa; }
+        #i-date { font-size: 24px; font-weight: bold; height: 60px; }
+        .numpad-overlay { display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: #dfe6e9; padding: 10px; box-sizing: border-box; z-index: 2000; }
+        .selection-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 1000; overflow-y: auto; }
+        
+        /* インポート・設定 */
+        .import-box { background: #f8f9fa; padding: 20px; border-radius: 15px; margin-bottom: 25px; border: 1px solid var(--border); }
+        .danger-zone { border: 2px dashed var(--danger); padding: 20px; border-radius: 15px; margin-top: 30px; text-align: center; }
+        .btn-danger { background-color: var(--danger); }
+        .master-table-wrapper { overflow-x: auto; margin-top: 10px; }
+        .master-table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--border); }
+        .master-table th { background: #f1f2f6; padding: 12px 8px; text-align: left; font-size: 14px; border-bottom: 2px solid var(--border); }
+        .master-table td { padding: 12px 8px; border-bottom: 1px solid var(--border); font-size: 13px; }
+        
+        .camera-btn-group { display: flex; gap: 10px; margin-top: 5px; }
+        .btn-photo { background: #636e72; color: white; flex: 1; padding: 12px; border-radius: 8px; font-size: 14px; border: none; }
+        .btn-select { background: #dfe6e9; color: var(--text-main); flex: 1; padding: 12px; border-radius: 8px; font-size: 14px; border: 1px solid #b2bec3; }
+        .btn-clear-img { background: #636e72; color: white; padding: 8px; border-radius: 8px; font-size: 12px; border: none; margin-top: 8px; display: none; width: 100%; }
+    </style>
+</head>
+<body>
+
+<div id="sakura-bg" class="sakura-container"></div>
+
+<div class="app-container">
+    <header><h1>🌸 さくらの会計 🌸</h1></header>
+
+    <div id="view-dashboard" class="view active">
+        <div class="summary-card">
+            <div class="summary-label">現在の合計残高</div>
+            <h2 class="summary-total" id="dash-total">¥0</h2>
+            <hr class="summary-hr">
+            <div class="summary-details">
+                <div class="summary-item"><p>総収入</p><h3 id="dash-inc" style="color:var(--income-color)">¥0</h3></div>
+                <div class="summary-item"><p>総支出</p><h3 id="dash-exp" style="color:var(--expense-color)">¥0</h3></div>
+            </div>
+        </div>
+        
+        <div class="btn-grid">
+            <button class="btn btn-income" onclick="openInput('income')">＋ 収入を入力</button>
+            <button class="btn btn-expense" onclick="openInput('expense')">－ 支出を入力</button>
+        </div>
+        <button class="btn btn-history" onclick="openHistory()">📄 履歴を確認・編集する</button>
+        <button class="btn btn-setting" onclick="openSettings()">⚙️ 設定（項目マスター編集）</button>
+        
+        <div class="spacer-5lines"></div>
+        <div id="dashboard-alerts" class="alert-container"></div>
+    </div>
+
+    <div id="view-input" class="view">
+        <div style="display:flex; justify-content:space-between; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom:20px;">
+            <h2 style="margin:0;" id="input-title">入力</h2>
+            <span style="font-size:28px; cursor:pointer;" onclick="goBack()">×</span>
+        </div>
+        <form id="kaikei-form">
+            <div class="form-group"><label>① 日付</label><input type="date" id="i-date" class="form-control" required></div>
+            <div class="form-group"><label>② 項目</label><input type="text" id="i-item" class="form-control" placeholder="タップして選択" onclick="if(!this.value) openSelectionModal('item')" required></div>
+            <div class="form-group"><label>③ 内容</label><input type="text" id="i-detail" class="form-control" placeholder="タップして選択" onclick="if(!this.value) openSelectionModal('detail')"></div>
+            <div class="form-group"><label>④ 金額 (円)</label><input type="text" id="i-amount" class="form-control" placeholder="0" required readonly onclick="openNumpad()" style="text-align:right; font-size:24px; font-weight:bold;"></div>
+            <div class="form-group"><label>⑤ カテゴリー</label><input type="text" id="i-category" class="form-control" placeholder="カテゴリー" required></div>
+            <div class="form-group"><label>⑥ メモ</label><input type="text" id="i-memo" class="form-control" placeholder="補足があれば入力"></div>
+            <div class="form-group">
+                <label>⑦ 領収書・レシート</label>
+                <div style="margin: 20px 0;"><label style="font-size:20px; font-weight:bold; cursor:pointer; display:flex; align-items:center; gap:15px;"><input type="checkbox" id="i-no-receipt-req" onchange="toggleReceiptNo()" style="transform: scale(2.0); margin:5px;"> 番号管理は不要☑</label></div>
+                <div id="receipt-no-area" style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                    <span style="font-size:12px;">管理No:</span><input type="number" id="i-receipt-no" class="form-control" style="width:80px; padding:5px;">
+                </div>
+                <div class="camera-btn-group">
+                    <button type="button" class="btn-photo" onclick="document.getElementById('i-cam').click()">📷 スマホ撮影</button>
+                    <button type="button" class="btn-select" onclick="document.getElementById('i-lib').click()">🖼️ 選ぶ</button>
+                </div>
+                <input type="file" id="i-cam" accept="image/*" capture="environment" style="display:none;" onchange="handleImage(this)"><input type="file" id="i-lib" accept="image/*" style="display:none;" onchange="handleImage(this)">
+                <img id="preview-img" style="max-width:100%; margin-top:10px; display:none; border-radius: 8px;">
+                <button type="button" id="btn-clear-img" class="btn-clear-img" onclick="clearSelectedImage()">画像を削除する</button>
+            </div>
+            <div class="form-group" style="margin: 20px 0;"><label style="display:flex; align-items:center; gap:10px;"><input type="checkbox" id="i-tatekae" style="transform: scale(1.5);"><b>現在、立替中である</b></label></div>
+            <button type="submit" class="btn" id="btn-submit" style="width:100%; height:60px; font-size:20px;">登録する</button>
+        </form>
+    </div>
+
+    <div id="view-history" class="view">
+        <button class="btn" style="background:#27ae60; width:100%; margin-bottom:20px;" onclick="exportToExcel()">📥 Excel出力 (簿記票形式・残高付)</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+            <h2 style="margin:0;">📄 取引履歴</h2>
+            <button class="btn" style="background:#636e72; padding:8px 15px; font-size:13px; width:auto;" onclick="goBack()">◀ 戻る</button>
+        </div>
+        <div class="hist-balance-card">
+            <div style="font-size:13px; color:var(--text-sub);">現在の総残高</div>
+            <h2 id="hist-balance" style="margin:5px 0; font-size:32px;">¥0</h2>
+            <div class="hist-summary-row"><span id="hist-all-inc">総収入: ¥0</span><span id="hist-all-exp">総支出: ¥0</span></div>
+        </div>
+        <div id="month-jump-container" style="display:flex; overflow-x:auto; padding-bottom:10px; margin-bottom:10px;"></div>
+        <div id="month-summary-area" class="month-summary-box" style="display:none;"></div>
+        <h3 style="font-size:14px; color:var(--text-sub); margin:0 0 10px 0;" id="hist-count">表示: 0件</h3>
+        <div class="filter-group" style="display:flex; gap:8px; margin-bottom:15px; flex-wrap:wrap;">
+            <label class="filter-label"><input type="checkbox" id="f-inc" onchange="exclusiveFilter('f-inc')"> 収入のみ</label>
+            <label class="filter-label"><input type="checkbox" id="f-exp" onchange="exclusiveFilter('f-exp')"> 支出のみ</label>
+            <label class="filter-label"><input type="checkbox" id="f-tatekae" onchange="exclusiveFilter('f-tatekae')"> 立替中のみ</label>
+            <label class="filter-label"><input type="checkbox" id="f-noimg" onchange="exclusiveFilter('f-noimg')"> 未領収のみ</label>
+        </div>
+        <ul id="history-list" style="list-style:none; padding:0;"></ul>
+    </div>
+
+    <div id="view-settings" class="view">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+            <h2 style="margin:0;">⚙️ システム設定</h2>
+            <button class="btn" style="background:#636e72; padding:8px 15px; font-size:13px; width:auto;" onclick="goBack()">◀ 戻る</button>
+        </div>
+        <div class="import-box">
+            <h3 style="margin-top:0; font-size:16px;">📸 画像を含む全データ引っ越し</h3>
+            <p style="font-size:11px; color:#666; margin-bottom:10px;">画像・リスト・履歴をすべて一括で保存・復元します</p>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <button class="btn" style="background:#6c5ce7; font-size:12px;" onclick="backupAllData()">💾 全データ保存</button>
+                <label class="btn" style="background:#fd79a8; font-size:12px; cursor:pointer;">
+                    📂 全データ復元
+                    <input type="file" id="full-backup-upload" accept=".json" style="display:none;" onchange="restoreAllData(event)">
+                </label>
+            </div>
+            <hr style="margin:20px 0; border:0; border-top:1px solid #eee;">
+            <h3 style="margin-top:0; font-size:16px;">📂 Excelからの読込</h3>
+            <label class="btn" style="background-color: #00b894; cursor: pointer; width:100%; font-size:14px;">
+                📁 Excel読込 (履歴orリスト)
+                <input type="file" id="excel-upload" accept=".xlsx, .xls, .csv" style="display:none;" onchange="handleExcelUploadWarning(event)">
+            </label>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="margin:0;">📝 リスト設定</h3>
+            <button class="btn" style="background:#27ae60; padding:5px 10px; font-size:11px; width:auto;" onclick="exportMasterToExcel()">📝 リストをExcel出力</button>
+        </div>
+        <div class="master-table-wrapper"><table class="master-table"><thead><tr><th>項目</th><th>カテゴリー</th><th>内容</th><th>操作</th></tr></thead><tbody id="master-list-tbody"></tbody></table></div>
+        <div class="danger-zone">
+            <button class="btn btn-danger" style="width:100%" onclick="deleteAllRecords()">📄 取引履歴をすべて削除する</button>
+        </div>
+    </div>
+
+    <div id="custom-numpad" class="numpad-overlay">
+        <div style="text-align:center; font-size:24px; font-weight:bold; margin-bottom:10px; background:#fff; padding:10px; border-radius:8px;" id="numpad-display">¥0</div>
+        <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px;">
+            <button class="btn" style="background:#fff; color:#333; height:60px;" onclick="numPad('7')">7</button><button class="btn" style="background:#fff; color:#333; height:60px;" onclick="numPad('8')">8</button><button class="btn" style="background:#fff; color:#333; height:60px;" onclick="numPad('9')">9</button><button class="btn" style="background:#e17055; height:60px;" onclick="numPad('C')">C</button>
+            <button class="btn" style="background:#fff; color:#333; height:60px;" onclick="numPad('4')">4</button><button class="btn" style="background:#fff; color:#333; height:60px;" onclick="numPad('5')">5</button><button class="btn" style="background:#fff; color:#333; height:60px;" onclick="numPad('6')">6</button><button class="btn" style="background:#74b9ff; height:60px;" onclick="numPad('千')">千</button>
+            <button class="btn" style="background:#fff; color:#333; height:60px;" onclick="numPad('1')">1</button><button class="btn" style="background:#fff; color:#333; height:60px;" onclick="numPad('2')">2</button><button class="btn" style="background:#fff; color:#333; height:60px;" onclick="numPad('3')">3</button><button class="btn" style="background:#74b9ff; height:60px;" onclick="numPad('万')">万</button>
+            <button class="btn" style="background:#fff; color:#333; height:60px;" onclick="numPad('0')">0</button><button class="btn" style="background:#fff; color:#333; height:60px;" onclick="numPad('00')">00</button><button class="btn" style="background:#00b894; grid-column:span 2; height:60px;" onclick="closeNumpad()">完了</button>
+        </div>
+    </div>
+    
+    <div id="selection-modal" class="selection-modal">
+        <div style="padding:15px; border-bottom:1px solid #eee; position:sticky; top:0; background:#fff; z-index:1001;">
+            <div style="display:flex; justify-content:space-between; align-items:center;"><h3 id="selection-title" style="margin:0;">選択</h3><span onclick="closeSelectionModal()" style="font-size:32px; cursor:pointer;">×</span></div>
+            <div id="manual-entry-area" style="margin-top:15px; display:flex; gap:10px;">
+                <input type="text" id="modal-manual-input" class="form-control" placeholder="手動入力する">
+                <button class="btn" style="background:var(--income-color); padding:10px; width:80px;" onclick="setManualValue()">決定</button>
+            </div>
+        </div>
+        <div id="selection-grid" style="display:flex; flex-wrap:wrap; gap:10px; padding:15px;"></div>
+    </div>
+
+    <div id="master-edit-modal" class="selection-modal" style="z-index:3000;">
+        <div style="padding:20px;">
+            <h3>📝 リスト項目の編集</h3>
+            <div style="margin-bottom:15px;"><label>項目名</label><input type="text" id="me-item" class="form-control"></div>
+            <div style="margin-bottom:15px;"><label>カテゴリー</label><input type="text" id="me-cat" class="form-control"></div>
+            <div style="margin-bottom:15px;"><label>内容</label><input type="text" id="me-detail" class="form-control"></div>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button class="btn" style="background:#00b894; flex:1;" onclick="saveEditedMaster()">保存する</button>
+                <button class="btn" style="background:#636e72; flex:1;" onclick="document.getElementById('master-edit-modal').style.display='none'">キャンセル</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const STORAGE_RECORDS = 'sakura_records_v4'; const STORAGE_MASTER = 'sakura_master_v4';
+    let currentType = 'income', currentImageBase64 = '', amountValue = "", editingId = null, currentMonthFilter = 'all', currentModalTarget = '', editingMasterIdx = null;
+
+    // --- ここから追加：スワイプ・戻るボタン対応 ---
+    window.addEventListener('popstate', (e) => {
+        // ブラウザの戻る操作が行われた時
+        if (e.state && e.state.view) {
+            changeView(e.state.view, false); // 履歴には追加せずにビュー切り替え
+        } else {
+            changeView('view-dashboard', false);
+        }
+    });
+
+    // 戻る操作をプログラムから呼び出す用
+    window.goBack = () => {
+        if (document.getElementById('view-dashboard').classList.contains('active')) {
+            // すでにホームなら何もしない（ブラウザの挙動に任せる）
+        } else {
+            history.back(); // ブラウザの戻るを実行
+        }
+    };
+    // --- 追加ここまで ---
+
+    window.onload = () => { 
+        if (!localStorage.getItem(STORAGE_MASTER)) localStorage.setItem(STORAGE_MASTER, JSON.stringify([{ item: '繰越金', cat: '繰越金', detail: '繰越金', count: 0, type: 'income' }])); 
+        createSakura(); 
+        updateDashboard();
+        // 初期状態を履歴に保存
+        history.replaceState({view: 'view-dashboard'}, '');
+    };
+
+    function createSakura() { const c = document.getElementById('sakura-bg'); for (let i = 0; i < 20; i++) { const p = document.createElement('div'); p.className = 'petal'; p.innerHTML = '🌸'; p.style.left = Math.random() * 100 + 'vw'; p.style.animationDuration = (Math.random() * 3 + 5) + 's'; p.style.animationDelay = Math.random() * 5 + 's'; p.style.opacity = Math.random(); p.style.fontSize = (Math.random() * 10 + 10) + 'px'; c.appendChild(p); } }
+    function getMaster() { return JSON.parse(localStorage.getItem(STORAGE_MASTER)); }
+    function saveMaster(data) { localStorage.setItem(STORAGE_MASTER, JSON.stringify(data)); }
+    function getRecords() { return JSON.parse(localStorage.getItem(STORAGE_RECORDS) || '[]'); }
+
+    window.updateDashboard = () => {
+        const rs = getRecords(); let inc = 0, exp = 0, tC = 0, tA = 0, nI = 0;
+        rs.forEach(r => { if(r.type==='income') inc+=r.amount; else exp+=r.amount; if(r.tatekae){ tC++; tA+=r.amount; } if(!r.img && r.type==='expense' && !r.receiptNotRequired) nI++; });
+        document.getElementById('dash-total').innerText = `¥${(inc-exp).toLocaleString()}`;
+        document.getElementById('dash-inc').innerText = `¥${inc.toLocaleString()}`;
+        document.getElementById('dash-exp').innerText = `¥${exp.toLocaleString()}`;
+        const al = document.getElementById('dashboard-alerts'); al.innerHTML = '';
+        if (tC > 0) al.innerHTML += `<div class="alert-box" onclick="openHistoryAndFilter('tatekae')">⚠️ 立替中: ${tC}件 (¥${tA.toLocaleString()})</div>`;
+        if (nI > 0) al.innerHTML += `<div class="alert-box danger" onclick="openHistoryAndFilter('noimg')">⚠️ 未領収: ${nI}件</div>`;
+    };
+
+    window.openHistoryAndFilter = (f) => { clearFilters(); if(f==='tatekae') document.getElementById('f-tatekae').checked=true; if(f==='noimg') document.getElementById('f-noimg').checked=true; currentMonthFilter = 'all'; renderHistory(); changeView('view-history'); };
+    function clearFilters() { ['f-inc', 'f-exp', 'f-tatekae', 'f-noimg'].forEach(id => document.getElementById(id).checked = false); currentMonthFilter = 'all'; }
+
+    window.renderHistory = function() {
+        let all = getRecords(); let filtered = all; const list = document.getElementById('history-list'); list.innerHTML = '';
+        if (document.getElementById('f-inc').checked) filtered = filtered.filter(r => r.type === 'income');
+        if (document.getElementById('f-exp').checked) filtered = filtered.filter(r => r.type === 'expense');
+        if (document.getElementById('f-tatekae').checked) filtered = filtered.filter(r => r.tatekae);
+        if (document.getElementById('f-noimg').checked) filtered = filtered.filter(r => !r.img && r.type === 'expense' && !r.receiptNotRequired);
+        let months = new Set(); all.forEach(r => months.add(r.date.substring(0, 7)));
+        let btns = `<button class="month-jump-btn ${currentMonthFilter==='all'?'active':''}" onclick="setMonthFilter('all')">全て</button>`;
+        Array.from(months).sort().reverse().forEach(m => { btns += `<button class="month-jump-btn ${currentMonthFilter===m?'active':''}" onclick="setMonthFilter('${m}')">${m.substring(2)}</button>`; });
+        document.getElementById('month-jump-container').innerHTML = btns;
+        if (currentMonthFilter !== 'all') filtered = filtered.filter(r => r.date.startsWith(currentMonthFilter));
+        let allInc = 0, allExp = 0; all.forEach(r => { if(r.type==='income') allInc += r.amount; else allExp += r.amount; });
+        document.getElementById('hist-balance').innerText = `¥${(allInc - allExp).toLocaleString()}`;
+        document.getElementById('hist-all-inc').innerText = `総収入: ¥${allInc.toLocaleString()}`;
+        document.getElementById('hist-all-exp').innerText = `総支出: ¥${allExp.toLocaleString()}`;
+        const sumArea = document.getElementById('month-summary-area');
+        if (currentMonthFilter !== 'all') {
+            let mInc = 0, mExp = 0; filtered.forEach(r => { if(r.type==='income') mInc += r.amount; else mExp += r.amount; });
+            sumArea.style.display = 'block'; sumArea.innerHTML = `📅 ${currentMonthFilter.substring(5)}月の収支: 収入 ¥${mInc.toLocaleString()} / 支出 ¥${mExp.toLocaleString()} / 残高 ¥${(mInc-mExp).toLocaleString()}`;
+        } else sumArea.style.display = 'none';
+        document.getElementById('hist-count').innerText = `表示: ${filtered.length}件`;
+        filtered.sort((a,b) => { if (b.date !== a.date) return new Date(b.date) - new Date(a.date); return b.id - a.id; }).forEach(r => {
+            const li = document.createElement('li'); li.className = 'list-item'; li.onclick = () => editRecord(r.id);
+            const catS = r.type === 'income' ? 'background: #e3f2fd; color: #0984e3; border: 1px solid #74b9ff;' : 'background: #ffebee; color: #d63031; border: 1px solid #ff8a80;';
+            const tateBadge = r.tatekae ? '<span style="background:#f1c40f; color:#fff; padding:2px 8px; border-radius:20px; font-weight:bold; font-size:10px; margin-left:5px;">立替中</span>' : '';
+            const imgHtml = r.img ? `<div style="margin-top:10px;"><img src="${r.img}" style="max-width:100%; max-height:120px; border-radius:8px; display:block;"></div>` : '';
+            li.innerHTML = `<div style="display:flex; justify-content:space-between;"><div><span class="item-cat" style="${catS}">${r.cat}</span>${tateBadge}<div style="font-weight:bold; font-size:15px; margin-top:4px;">${r.item}</div><div style="font-size:13px; color:#333; margin-top:2px;">${r.detail ? '('+r.detail+')' : ''}</div><div style="font-size:12px; color:#666;">${r.date} ${r.receiptNo ? '<span style="background:#6c5ce7; color:white; padding:2px 8px; border-radius:20px; font-weight:bold; font-size:10px;">No.'+r.receiptNo+'</span>' : ''}</div></div><div style="color:${r.type==='income'?'var(--income-color)':'var(--expense-color)'}; font-weight:bold; font-size:18px;">${r.type==='income'?'+':'-'}¥${r.amount.toLocaleString()}</div></div>${imgHtml}${r.memo ? `<div style="font-size:12px; color:#666; margin-top:8px; border-top:1px dotted #eee; padding-top:5px;">📝 ${r.memo}</div>` : ''}<div style="text-align:right; margin-top:10px;"><button class="btn" style="background:#ffeaa7; color:#d63031; padding:5px 15px; font-size:11px; border-radius:6px; display:inline-block;" onclick="event.stopPropagation(); deleteRecord(${r.id})">削除</button></div>`;
+            list.appendChild(li);
+        });
+    };
+
+    window.openInput = (type, edit=false) => { currentType=type; const b=document.getElementById('btn-submit'); b.style.backgroundColor=type==='income'?'var(--income-color)':'var(--expense-color)'; if(!edit){ editingId=null; document.getElementById('kaikei-form').reset(); document.getElementById('i-date').value = new Date().toLocaleDateString('sv-SE'); currentImageBase64=''; document.getElementById('preview-img').style.display='none'; document.getElementById('btn-clear-img').style.display='none'; amountValue=""; document.getElementById('i-amount').value="0"; document.getElementById('i-receipt-no').value=getNextReceiptNo(); document.getElementById('i-no-receipt-req').checked = false; toggleReceiptNo(); } changeView('view-input'); };
+    window.clearSelectedImage = () => { currentImageBase64 = ''; document.getElementById('preview-img').style.display = 'none'; document.getElementById('btn-clear-img').style.display = 'none'; document.getElementById('i-cam').value = ''; document.getElementById('i-lib').value = ''; };
+    
+    window.backupAllData = () => { const data = { records: getRecords(), master: getMaster(), version: "4.0", date: new Date().toLocaleString() }; const blob = new Blob([JSON.stringify(data)], { type: "application/json" }); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `sakura_full_backup_${new Date().toISOString().split('T')[0]}.json`; a.click(); };
+    window.restoreAllData = (e) => { const file = e.target.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = (ev) => { try { const data = JSON.parse(ev.target.result); if(!data.records || !data.master) throw new Error(); if(confirm("【警告】現在のすべてのデータを消去し、バックアップから画像も含めて完全に復元しますか？")){ localStorage.setItem(STORAGE_RECORDS, JSON.stringify(data.records)); localStorage.setItem(STORAGE_MASTER, JSON.stringify(data.master)); alert("復元が完了しました。"); location.reload(); } } catch(err){ alert("無効なバックアップファイルです"); } }; reader.readAsText(file); e.target.value = ''; };
+
+    window.exportToExcel = function(){
+        const all = getRecords(); if(!all.length) return alert("データがありません");
+        const sorted = all.sort((a,b) => new Date(a.date) - new Date(b.date)); let bal = 0;
+        const data = sorted.map(r => { bal += (r.type==='income'?r.amount:-r.amount); return { "管理No": r.receiptNo||"", "日付": r.date, "区分": r.type==='income'?'収入':'支出', "項目": r.item, "カテゴリー": r.cat, "金額": (r.type==='income'?r.amount:-r.amount), "残高": bal, "備考": r.memo||"", "立替": r.tatekae?'○':'' }; });
+        const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "取引履歴");
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const b = new Blob([wbout], { type: "application/octet-stream" });
+        const url = URL.createObjectURL(b); const a = document.createElement("a"); a.href = url; a.download = "sakura_kaikei.xlsx"; a.click();
+    };
+
+    window.exportMasterToExcel = function() { const ms = getMaster(); if(!ms.length) return alert("マスターがありません"); const ws = XLSX.utils.json_to_sheet(ms); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "マスター"); XLSX.writeFile(wb, `sakura_master_backup.xlsx`); };
+    window.handleExcelUploadWarning = (e) => { handleExcelUpload(e); };
+    function handleExcelUpload(event) {
+        const file = event.target.files[0]; if (!file) return; const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = new Uint8Array(e.target.result), workbook = XLSX.read(data, {type: 'array'});
+                let targetData = null, hIdx = -1, isMasterFile = false;
+                for (let sn of workbook.SheetNames) {
+                    const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[sn], {header: 1, raw: false, dateNF: 'yyyy-mm-dd'});
+                    for (let i = 0; i < jsonData.length; i++) {
+                        const rs = (jsonData[i]||[]).map(c => String(c||'').replace(/[\s"]/g, ''));
+                        if (rs.some(c => c.includes('日付')) && rs.some(c => c.includes('項目'))) { targetData = jsonData; hIdx = i; isMasterFile = false; break; }
+                        if (rs.includes('item') && rs.includes('cat') && rs.includes('type')) { targetData = jsonData; hIdx = i; isMasterFile = true; break; }
+                    }
+                    if (targetData) break;
+                }
+                if (targetData) { if (isMasterFile) { if (confirm("リスト設定を復元しますか？")) restoreMaster(targetData, hIdx); } else { if (confirm("取引履歴を取り込みますか？")) parseExcelData(targetData, hIdx); } } else alert("データが見つかりませんでした");
+            } catch (err) { alert('エラーが発生しました'); } finally { event.target.value = ''; }
+        }; reader.readAsArrayBuffer(file);
+    }
+    function restoreMaster(dataArray, hIdx) {
+        const h = dataArray[hIdx].map(h => String(h||'').trim()); const ii = h.indexOf('item'), ci = h.indexOf('cat'), di = h.indexOf('detail'), ti = h.indexOf('type');
+        let nm = []; for (let i = hIdx + 1; i < dataArray.length; i++) { const c = dataArray[i]; if (!c || !c[ii]) continue; nm.push({ item: String(c[ii]), cat: String(c[ci]||''), detail: String(c[di]||''), type: String(c[ti]||'expense'), count: 0 }); }
+        if (nm.length > 0) { saveMaster(nm); alert(`${nm.length}件復元しました`); openSettings(); }
+    }
+    function parseExcelData(dataArray, hIdx) {
+        const h = dataArray[hIdx].map(h => h ? String(h).replace(/[\s"]/g, '') : ''); const di = h.findIndex(x => x.includes('日付')), ii = h.findIndex(x => x.includes('項目')), dti = h.findIndex(x => x.includes('内容')), ci = h.findIndex(x => x.includes('カテゴリー')), inci = h.findIndex(x => x.includes('収入')), expi = h.findIndex(x => x.includes('支出'));
+        let cnt = 0, rs = getRecords(); for (let i = hIdx + 1; i < dataArray.length; i++) { const c = dataArray[i]; if (!c || !c[di]) continue; let type = '', amt = 0; if (c[inci] > 0) { type = 'income'; amt = parseInt(c[inci]); } else if (c[expi] > 0) { type = 'expense'; amt = Math.abs(parseInt(c[expi])); } if (type && amt > 0) { rs.push({ id: Date.now() + i, date: String(c[di]), type: type, item: String(c[ii]), cat: String(c[ci]||c[ii]), detail: String(c[dti]||''), amount: amt, tatekae: false, receiptNotRequired: true, img: '' }); cnt++; } }
+        localStorage.setItem(STORAGE_RECORDS, JSON.stringify(rs)); alert(`${cnt}件取り込みました`); updateDashboard();
+    }
+
+    // --- 変更箇所：changeViewを履歴対応に ---
+    window.changeView = (id, pushHistory = true) => { 
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); 
+        document.getElementById(id).classList.add('active'); 
+        const s = document.getElementById('sakura-bg'); 
+        if(id === 'view-history') s.style.display = 'none'; else s.style.display = 'block'; 
+        
+        // 履歴に追加する場合（手動クリック時など）
+        if (pushHistory && id !== 'view-dashboard') {
+            history.pushState({view: id}, '');
+        }
+        window.scrollTo(0,0); 
+    };
+
+    window.exclusiveFilter = (id) => { const f = ['f-inc', 'f-exp', 'f-tatekae', 'f-noimg']; if (document.getElementById(id).checked) f.forEach(x => { if(x!==id) document.getElementById(x).checked=false; }); renderHistory(); };
+    window.openNumpad = () => { document.getElementById('custom-numpad').style.display = 'block'; const cur = document.getElementById('i-amount').value.replace(/,/g, ''); amountValue = cur === "0" ? "" : cur; document.getElementById('numpad-display').innerText = `¥${Number(amountValue || 0).toLocaleString()}`; };
+    window.closeNumpad = () => document.getElementById('custom-numpad').style.display = 'none';
+    window.numPad = (v) => { if (v==='C') amountValue=""; else if(v==='千') amountValue+="000"; else if(v==='万') amountValue+="0000"; else amountValue+=v; const n = parseInt(amountValue||0); document.getElementById('numpad-display').innerText=`¥${n.toLocaleString()}`; document.getElementById('i-amount').value=n.toLocaleString(); };
+    window.toggleReceiptNo = () => { const n=document.getElementById('i-no-receipt-req').checked, a=document.getElementById('receipt-no-area'); if(n) a.style.display='none'; else { a.style.display='flex'; if(!document.getElementById('i-receipt-no').value) document.getElementById('i-receipt-no').value=getNextReceiptNo(); } };
+    function getNextReceiptNo(){ const rs=getRecords(); let m=0; rs.forEach(r=>{ if(Number(r.receiptNo)>m) m=Number(r.receiptNo); }); return m+1; }
+    window.deleteAllRecords = () => { if(confirm('全履歴を削除しますか？')){ localStorage.setItem(STORAGE_RECORDS, '[]'); updateDashboard(); changeView('view-dashboard'); } };
+    window.openHistory = () => { clearFilters(); renderHistory(); changeView('view-history'); };
+    window.setMonthFilter = (m) => { currentMonthFilter=m; renderHistory(); };
+    window.editRecord = (id) => { const r=getRecords().find(x=>x.id===id); if(!r) return; editingId=r.id; openInput(r.type,true); document.getElementById('i-date').value=r.date; document.getElementById('i-item').value=r.item; document.getElementById('i-detail').value=r.detail; document.getElementById('i-category').value=r.cat; document.getElementById('i-amount').value=r.amount.toLocaleString(); amountValue=r.amount.toString(); document.getElementById('i-memo').value=r.memo; document.getElementById('i-tatekae').checked=r.tatekae; document.getElementById('i-receipt-no').value=r.receiptNo; document.getElementById('i-no-receipt-req').checked=r.receiptNotRequired; toggleReceiptNo(); currentImageBase64=r.img||''; if(r.img){ document.getElementById('preview-img').src=r.img; document.getElementById('preview-img').style.display='block'; document.getElementById('btn-clear-img').style.display='block'; } else { document.getElementById('preview-img').style.display='none'; document.getElementById('btn-clear-img').style.display='none'; } };
+    window.deleteRecord = (id) => { if(confirm('削除しますか？')){ const rs=getRecords().filter(x=>x.id!==id); localStorage.setItem(STORAGE_RECORDS,JSON.stringify(rs)); renderHistory(); updateDashboard(); } };
+    document.getElementById('kaikei-form').addEventListener('submit', function(e){ e.preventDefault(); const amt=parseInt(document.getElementById('i-amount').value.replace(/,/g,'')||0); if(amt<=0) return alert("金額を入力してください"); let rs=getRecords(); const data={id:editingId||Date.now(),date:document.getElementById('i-date').value,type:currentType,item:document.getElementById('i-item').value,detail:document.getElementById('i-detail').value,cat:document.getElementById('i-category').value,amount:amt,memo:document.getElementById('i-memo').value,tatekae:document.getElementById('i-tatekae').checked,receiptNo:document.getElementById('i-receipt-no').value,receiptNotRequired:document.getElementById('i-no-receipt-req').checked,img:currentImageBase64}; const isEdit=!!editingId; if(isEdit) rs=rs.map(r=>r.id===editingId?data:r); else rs.push(data); localStorage.setItem(STORAGE_RECORDS,JSON.stringify(rs)); let m=getMaster(); if(!m.some(x=>x.item===data.item&&x.cat===data.cat&&x.detail===data.detail&&x.type===data.type)){ m.push({item:data.item,cat:data.cat,detail:data.detail,type:data.type,count:0}); saveMaster(m); } updateDashboard(); goBack(); // 保存後は前の画面へ戻る 
+    });
+    window.openSelectionModal = (target) => { currentModalTarget = target; document.getElementById('selection-grid').innerHTML=''; document.getElementById('modal-manual-input').value = ''; const ms=getMaster().filter(x=>x.type===currentType); if(target==='item'){ [...new Set(ms.map(x=>x.item))].forEach(it=>{ const btn=document.createElement('button'); btn.className='btn'; btn.style.background='#eee'; btn.style.color='#333'; btn.innerText=it; btn.onclick=()=>{ document.getElementById('i-item').value=it; const f=ms.find(x=>x.item===it); if(f) document.getElementById('i-category').value=f.cat; closeSelectionModal(); }; document.getElementById('selection-grid').appendChild(btn); }); } else { const c=document.getElementById('i-item').value; ms.filter(x=>x.item===c&&x.detail).forEach(x=>{ const btn=document.createElement('button'); btn.className='btn'; btn.style.background='#eee'; btn.style.color='#333'; btn.innerText=x.detail; btn.onclick=()=>{ document.getElementById('i-detail').value=x.detail; closeSelectionModal(); }; document.getElementById('selection-grid').appendChild(btn); }); } document.getElementById('selection-modal').style.display='block'; };
+    window.setManualValue = () => { const val = document.getElementById('modal-manual-input').value; if(!val) return; if(currentModalTarget==='item') document.getElementById('i-item').value=val; else document.getElementById('i-detail').value=val; closeSelectionModal(); };
+    window.closeSelectionModal = () => document.getElementById('selection-modal').style.display='none';
+    window.handleImage = (i) => { const f=i.files[0]; if(!f) return; const r=new FileReader(); r.onload=(e)=>{ const img=new Image(); img.onload=()=>{ const c=document.createElement('canvas'); const MAX=800; let w=img.width,h=img.height; if(w>MAX){ h*=MAX/w; w=MAX; } c.width=w; c.height=h; c.getContext('2d').drawImage(img,0,0,w,h); currentImageBase64=c.toDataURL('image/jpeg',0.7); document.getElementById('preview-img').src=currentImageBase64; document.getElementById('preview-img').style.display='block'; document.getElementById('btn-clear-img').style.display='block'; }; img.src=e.target.result; }; r.readAsDataURL(f); };
+    window.openSettings = () => { const tbody = document.getElementById('master-list-tbody'); tbody.innerHTML = ''; getMaster().forEach((m, i) => { const typeL = m.type === 'income' ? '<span style="color:var(--income-color); font-weight:bold; font-size:11px; display:block;">[収入]</span>' : '<span style="color:var(--expense-color); font-weight:bold; font-size:11px; display:block;">[支出]</span>'; tbody.innerHTML += `<tr><td>${typeL}${m.item}</td><td>${m.cat}</td><td>${m.detail || '-'}</td><td><div style="display:flex; gap:4px;"><button style="background:#74b9ff; color:white; padding:6px 10px; border-radius:6px; font-size:12px; border:none;" onclick="editMaster(${i})">編集</button><button style="background:#ff7675; color:white; padding:6px 10px; border-radius:6px; font-size:12px; border:none;" onclick="deleteMaster(${i})">削除</button></div></td></tr>`; }); changeView('view-settings'); };
+    window.editMaster = (i) => { editingMasterIdx = i; let m = getMaster(); document.getElementById('me-item').value = m[i].item; document.getElementById('me-cat').value = m[i].cat; document.getElementById('me-detail').value = m[i].detail || ''; document.getElementById('master-edit-modal').style.display = 'block'; };
+    window.saveEditedMaster = () => { let m = getMaster(); const ni = document.getElementById('me-item').value, nc = document.getElementById('me-cat').value, nd = document.getElementById('me-detail').value; if (!ni || !nc) return alert("項目名とカテゴリーは必須です"); m[editingMasterIdx].item = ni; m[editingMasterIdx].cat = nc; m[editingMasterIdx].detail = nd; saveMaster(m); document.getElementById('master-edit-modal').style.display = 'none'; openSettings(); };
+    window.deleteMaster = (i) => { if(confirm('削除しますか？')){ let m=getMaster(); m.splice(i,1); saveMaster(m); openSettings(); } };
+</script>
+</body>
+</html>
