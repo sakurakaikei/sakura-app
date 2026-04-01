@@ -8,7 +8,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="さくらの会計">
-    <link rel="apple-touch-icon" href="https://placehold.jp/24/d63031/ffffff/180x180.png?text=🌸">
+    
+    <link rel="apple-touch-icon" href="https://api.iconify.design/noto:cherry-blossom.svg?width=180&height=180">
+    <link rel="icon" href="https://api.iconify.design/noto:cherry-blossom.svg?width=180&height=180" type="image/svg+xml">
+    
     <meta name="mobile-web-app-capable" content="yes">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -60,7 +63,6 @@
 
         .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; }
         .btn { padding: 16px; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: opacity 0.2s; }
-        .btn:active { opacity: 0.7; }
         .btn-income { background-color: var(--income-color); }
         .btn-expense { background-color: var(--expense-color); }
         .btn-history { background-color: var(--btn-history); color: #2d3436; width: 100%; margin-bottom: 15px; }
@@ -269,7 +271,7 @@
     // 戻る操作をプログラムから呼び出す用
     window.goBack = () => {
         if (document.getElementById('view-dashboard').classList.contains('active')) {
-            // すでにホームなら何もしない（ブラウザの挙動に任せる）
+            // すでにホームなら何もしない（ブラウザの挙挙に任せる）
         } else {
             history.back(); // ブラウザの戻るを実行
         }
