@@ -44,7 +44,6 @@
         .view.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* 桜吹雪アニメーション */
         .sakura-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; overflow: hidden; }
         .petal { position: absolute; color: #ffb8c6; font-size: 20px; user-select: none; animation: fall linear infinite; }
         @keyframes fall {
@@ -52,7 +51,6 @@
             100% { transform: translateY(110vh) translateX(100px) rotate(360deg); opacity: 0; }
         }
 
-        /* ダッシュボード */
         .summary-card { background: var(--card-bg); border-radius: 25px; padding: 30px 20px; text-align: center; margin: -35px 15px 20px 15px; border: 1px solid var(--border); box-shadow: 0 10px 25px rgba(0,0,0,0.05); position: relative; z-index: 20; }
         .summary-label { font-size: 13px; color: var(--text-sub); margin-bottom: 10px; }
         .summary-total { font-size: 42px; font-weight: 900; margin: 0 0 20px 0; color: #2d3436; letter-spacing: -1px; }
@@ -68,13 +66,22 @@
         .btn-history { background-color: var(--btn-history); color: #2d3436; width: 100%; margin-bottom: 15px; }
         .btn-setting { background-color: var(--btn-setting); color: #2d3436; width: 100%; }
 
-        /* アラート */
-        .spacer-5lines { height: 80px; }
-        .alert-container { display: flex; flex-direction: column; gap: 12px; }
+        .alert-container { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
         .alert-box { background: var(--alert-yellow); color: #856404; border-left: 8px solid var(--alert-yellow-border); padding: 18px; border-radius: 10px; font-size: 15px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .alert-box.danger { background: var(--alert-red); color: #721c24; border-left-color: var(--alert-red-border); }
 
-        /* 履歴表示 */
+        /* ミニゲーム：桜タップ */
+        .game-card { background: #fff0f3; border-radius: 20px; padding: 15px; margin-top: 20px; border: 2px solid #ffb8c6; text-align: center; position: relative; }
+        .game-title { font-size: 16px; font-weight: bold; color: #d63031; margin-bottom: 10px; }
+        .game-desc { font-size: 11px; color: #636e72; margin-bottom: 10px; line-height: 1.4; }
+        #game-area { width: 100%; height: 250px; background: #fff; border-radius: 15px; position: relative; overflow: hidden; border: 1px solid #ffdae0; cursor: pointer; touch-action: none; }
+        .game-sakura { position: absolute; font-size: 40px; cursor: pointer; user-select: none; transition: transform 0.1s; transform: scale(0); animation: sakuraSpawn 0.3s forwards; }
+        @keyframes sakuraSpawn { to { transform: scale(1); } }
+        .game-stats { display: flex; justify-content: space-around; margin: 10px 0; font-weight: bold; font-size: 14px; }
+        .game-rank { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #ffb8c6; font-size: 12px; color: #d63031; }
+        .combo-text { position: absolute; top: 10px; left: 10px; color: #ff79c6; font-size: 20px; font-weight: 900; pointer-events: none; }
+        .btn-game-start { background: #ff79c6; color: white; border: none; padding: 10px 30px; border-radius: 20px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+
         .hist-balance-card { background: #ffeaa7; border: 1px solid #fdcb6e; border-radius: 15px; padding: 15px; text-align: center; margin-bottom: 10px; }
         .hist-summary-row { font-size: 12px; color: var(--text-sub); display: flex; justify-content: center; gap: 15px; margin-top: 5px; font-weight: bold; }
         .month-summary-box { background: #e3f2fd; border: 1px solid #74b9ff; border-radius: 10px; padding: 12px; text-align: center; margin-bottom: 15px; font-size: 20px; font-weight: bold; color: #0984e3; }
@@ -89,7 +96,6 @@
         .numpad-overlay { display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: #dfe6e9; padding: 10px; box-sizing: border-box; z-index: 2000; }
         .selection-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 1000; overflow-y: auto; }
         
-        /* インポート・設定 */
         .import-box { background: #f8f9fa; padding: 20px; border-radius: 15px; margin-bottom: 25px; border: 1px solid var(--border); }
         .danger-zone { border: 2px dashed var(--danger); padding: 20px; border-radius: 15px; margin-top: 30px; text-align: center; }
         .btn-danger { background-color: var(--danger); }
@@ -129,8 +135,24 @@
         <button class="btn btn-history" onclick="openHistory()">📄 履歴を確認・編集する</button>
         <button class="btn btn-setting" onclick="openSettings()">⚙️ 設定（項目マスター編集）</button>
         
-        <div class="spacer-5lines"></div>
+        <div style="height: 30px;"></div>
         <div id="dashboard-alerts" class="alert-container"></div>
+
+        <div class="game-card">
+            <div class="game-title">🌸 桜タップ！脳トレ30秒チャレンジ</div>
+            <div class="game-desc">次々現れる桜をタップして！コンボを繋ぐと高得点。<br>時間が進むと猛スピードで桜が咲き乱れます。</div>
+            <div class="game-stats">
+                <div>残り時間: <span id="game-timer">30</span>s</div>
+                <div>スコア: <span id="game-score">0</span></div>
+            </div>
+            <div id="game-area">
+                <div id="combo-display" class="combo-text"></div>
+                <button class="btn-game-start" id="start-btn" onclick="startTapGame()">ゲーム開始！</button>
+            </div>
+            <div class="game-rank" id="game-rank-list">
+                ランキング読み込み中...
+            </div>
+        </div>
     </div>
 
     <div id="view-input" class="view">
@@ -149,7 +171,7 @@
                 <label>⑦ 領収書・レシート</label>
                 <div style="margin: 20px 0;"><label style="font-size:20px; font-weight:bold; cursor:pointer; display:flex; align-items:center; gap:15px;"><input type="checkbox" id="i-no-receipt-req" onchange="toggleReceiptNo()" style="transform: scale(2.0); margin:5px;"> 番号管理は不要☑</label></div>
                 <div id="receipt-no-area" style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-                    <span style="font-size:12px;">管理No:</span><input type="number" id="i-receipt-no" class="form-control" style="width:80px; padding:5px;">
+                    <span style="font-size:12px;">領収書№:</span><input type="number" id="i-receipt-no" class="form-control" style="width:80px; padding:5px;">
                 </div>
                 <div class="camera-btn-group">
                     <button type="button" class="btn-photo" onclick="document.getElementById('i-cam').click()">📷 スマホ撮影</button>
@@ -256,33 +278,24 @@
 
 <script>
     const STORAGE_RECORDS = 'sakura_records_v4'; const STORAGE_MASTER = 'sakura_master_v4';
+    const STORAGE_GAME_RANK = 'sakura_game_rank_v4';
     let currentType = 'income', currentImageBase64 = '', amountValue = "", editingId = null, currentMonthFilter = 'all', currentModalTarget = '', editingMasterIdx = null;
 
-    // --- ここから追加：スワイプ・戻るボタン対応 ---
     window.addEventListener('popstate', (e) => {
-        // ブラウザの戻る操作が行われた時
-        if (e.state && e.state.view) {
-            changeView(e.state.view, false); // 履歴には追加せずにビュー切り替え
-        } else {
-            changeView('view-dashboard', false);
-        }
+        if (e.state && e.state.view) changeView(e.state.view, false);
+        else changeView('view-dashboard', false);
     });
 
-    // 戻る操作をプログラムから呼び出す用
     window.goBack = () => {
-        if (document.getElementById('view-dashboard').classList.contains('active')) {
-            // すでにホームなら何もしない（ブラウザの挙挙に任せる）
-        } else {
-            history.back(); // ブラウザの戻るを実行
-        }
+        if (document.getElementById('view-dashboard').classList.contains('active')) return;
+        history.back();
     };
-    // --- 追加ここまで ---
 
     window.onload = () => { 
         if (!localStorage.getItem(STORAGE_MASTER)) localStorage.setItem(STORAGE_MASTER, JSON.stringify([{ item: '繰越金', cat: '繰越金', detail: '繰越金', count: 0, type: 'income' }])); 
         createSakura(); 
         updateDashboard();
-        // 初期状態を履歴に保存
+        updateGameRanking();
         history.replaceState({view: 'view-dashboard'}, '');
     };
 
@@ -331,7 +344,7 @@
             const catS = r.type === 'income' ? 'background: #e3f2fd; color: #0984e3; border: 1px solid #74b9ff;' : 'background: #ffebee; color: #d63031; border: 1px solid #ff8a80;';
             const tateBadge = r.tatekae ? '<span style="background:#f1c40f; color:#fff; padding:2px 8px; border-radius:20px; font-weight:bold; font-size:10px; margin-left:5px;">立替中</span>' : '';
             const imgHtml = r.img ? `<div style="margin-top:10px;"><img src="${r.img}" style="max-width:100%; max-height:120px; border-radius:8px; display:block;"></div>` : '';
-            li.innerHTML = `<div style="display:flex; justify-content:space-between;"><div><span class="item-cat" style="${catS}">${r.cat}</span>${tateBadge}<div style="font-weight:bold; font-size:15px; margin-top:4px;">${r.item}</div><div style="font-size:13px; color:#333; margin-top:2px;">${r.detail ? '('+r.detail+')' : ''}</div><div style="font-size:12px; color:#666;">${r.date} ${r.receiptNo ? '<span style="background:#6c5ce7; color:white; padding:2px 8px; border-radius:20px; font-weight:bold; font-size:10px;">No.'+r.receiptNo+'</span>' : ''}</div></div><div style="color:${r.type==='income'?'var(--income-color)':'var(--expense-color)'}; font-weight:bold; font-size:18px;">${r.type==='income'?'+':'-'}¥${r.amount.toLocaleString()}</div></div>${imgHtml}${r.memo ? `<div style="font-size:12px; color:#666; margin-top:8px; border-top:1px dotted #eee; padding-top:5px;">📝 ${r.memo}</div>` : ''}<div style="text-align:right; margin-top:10px;"><button class="btn" style="background:#ffeaa7; color:#d63031; padding:5px 15px; font-size:11px; border-radius:6px; display:inline-block;" onclick="event.stopPropagation(); deleteRecord(${r.id})">削除</button></div>`;
+            li.innerHTML = `<div style="display:flex; justify-content:space-between;"><div><span class="item-cat" style="${catS}">${r.cat}</span>${tateBadge}<div style="font-weight:bold; font-size:15px; margin-top:4px;">${r.item}</div><div style="font-size:13px; color:#333; margin-top:2px;">${r.detail ? '('+r.detail+')' : ''}</div><div style="font-size:12px; color:#666;">${r.date} ${r.receiptNo ? '<span style="background:#6c5ce7; color:white; padding:2px 8px; border-radius:20px; font-weight:bold; font-size:10px;">№.'+r.receiptNo+'</span>' : ''}</div></div><div style="color:${r.type==='income'?'var(--income-color)':'var(--expense-color)'}; font-weight:bold; font-size:18px;">${r.type==='income'?'+':'-'}¥${r.amount.toLocaleString()}</div></div>${imgHtml}${r.memo ? `<div style="font-size:12px; color:#666; margin-top:8px; border-top:1px dotted #eee; padding-top:5px;">📝 ${r.memo}</div>` : ''}<div style="text-align:right; margin-top:10px;"><button class="btn" style="background:#ffeaa7; color:#d63031; padding:5px 15px; font-size:11px; border-radius:6px; display:inline-block;" onclick="event.stopPropagation(); deleteRecord(${r.id})">削除</button></div>`;
             list.appendChild(li);
         });
     };
@@ -345,11 +358,30 @@
     window.exportToExcel = function(){
         const all = getRecords(); if(!all.length) return alert("データがありません");
         const sorted = all.sort((a,b) => new Date(a.date) - new Date(b.date)); let bal = 0;
-        const data = sorted.map(r => { bal += (r.type==='income'?r.amount:-r.amount); return { "管理No": r.receiptNo||"", "日付": r.date, "区分": r.type==='income'?'収入':'支出', "項目": r.item, "カテゴリー": r.cat, "金額": (r.type==='income'?r.amount:-r.amount), "残高": bal, "備考": r.memo||"", "立替": r.tatekae?'○':'' }; });
-        const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "取引履歴");
-        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-        const b = new Blob([wbout], { type: "application/octet-stream" });
-        const url = URL.createObjectURL(b); const a = document.createElement("a"); a.href = url; a.download = "sakura_kaikei.xlsx"; a.click();
+        const excelData = sorted.map(r => { 
+            const isInc = r.type==='income';
+            bal += (isInc ? r.amount : -r.amount); 
+            return { "日付": r.date, "項目": r.item, "内容": r.detail || "", "領収書№": r.receiptNo || "", "カテゴリー": r.cat, "収入": isInc ? r.amount : 0, "支出": !isInc ? r.amount : 0, "残高": bal, "備考": r.memo || "", "立替": r.tatekae ? '○' : '' }; 
+        });
+        const ws = XLSX.utils.json_to_sheet(excelData);
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        const wscols = [];
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+            let maxLen = 10;
+            for (let R = range.s.r; R <= range.e.r; ++R) {
+                const cell = ws[XLSX.utils.encode_cell({r:R, c:C})];
+                if (cell && cell.v) { const len = cell.v.toString().length * 2; if (len > maxLen) maxLen = len; }
+            }
+            wscols.push({ wch: maxLen });
+        }
+        ws['!cols'] = wscols;
+        for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+            const incCell = ws[XLSX.utils.encode_cell({r:R, c:5})], expCell = ws[XLSX.utils.encode_cell({r:R, c:6})];
+            if(incCell && incCell.v > 0) incCell.s = { font: { color: { rgb: "0984E3" } } };
+            if(expCell && expCell.v > 0) expCell.s = { font: { color: { rgb: "D63031" } } };
+        }
+        const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "取引履歴");
+        XLSX.writeFile(wb, "sakura_kaikei.xlsx");
     };
 
     window.exportMasterToExcel = function() { const ms = getMaster(); if(!ms.length) return alert("マスターがありません"); const ws = XLSX.utils.json_to_sheet(ms); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "マスター"); XLSX.writeFile(wb, `sakura_master_backup.xlsx`); };
@@ -384,17 +416,12 @@
         localStorage.setItem(STORAGE_RECORDS, JSON.stringify(rs)); alert(`${cnt}件取り込みました`); updateDashboard();
     }
 
-    // --- 変更箇所：changeViewを履歴対応に ---
     window.changeView = (id, pushHistory = true) => { 
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); 
         document.getElementById(id).classList.add('active'); 
         const s = document.getElementById('sakura-bg'); 
         if(id === 'view-history') s.style.display = 'none'; else s.style.display = 'block'; 
-        
-        // 履歴に追加する場合（手動クリック時など）
-        if (pushHistory && id !== 'view-dashboard') {
-            history.pushState({view: id}, '');
-        }
+        if (pushHistory && id !== 'view-dashboard') { history.pushState({view: id}, ''); }
         window.scrollTo(0,0); 
     };
 
@@ -409,8 +436,7 @@
     window.setMonthFilter = (m) => { currentMonthFilter=m; renderHistory(); };
     window.editRecord = (id) => { const r=getRecords().find(x=>x.id===id); if(!r) return; editingId=r.id; openInput(r.type,true); document.getElementById('i-date').value=r.date; document.getElementById('i-item').value=r.item; document.getElementById('i-detail').value=r.detail; document.getElementById('i-category').value=r.cat; document.getElementById('i-amount').value=r.amount.toLocaleString(); amountValue=r.amount.toString(); document.getElementById('i-memo').value=r.memo; document.getElementById('i-tatekae').checked=r.tatekae; document.getElementById('i-receipt-no').value=r.receiptNo; document.getElementById('i-no-receipt-req').checked=r.receiptNotRequired; toggleReceiptNo(); currentImageBase64=r.img||''; if(r.img){ document.getElementById('preview-img').src=r.img; document.getElementById('preview-img').style.display='block'; document.getElementById('btn-clear-img').style.display='block'; } else { document.getElementById('preview-img').style.display='none'; document.getElementById('btn-clear-img').style.display='none'; } };
     window.deleteRecord = (id) => { if(confirm('削除しますか？')){ const rs=getRecords().filter(x=>x.id!==id); localStorage.setItem(STORAGE_RECORDS,JSON.stringify(rs)); renderHistory(); updateDashboard(); } };
-    document.getElementById('kaikei-form').addEventListener('submit', function(e){ e.preventDefault(); const amt=parseInt(document.getElementById('i-amount').value.replace(/,/g,'')||0); if(amt<=0) return alert("金額を入力してください"); let rs=getRecords(); const data={id:editingId||Date.now(),date:document.getElementById('i-date').value,type:currentType,item:document.getElementById('i-item').value,detail:document.getElementById('i-detail').value,cat:document.getElementById('i-category').value,amount:amt,memo:document.getElementById('i-memo').value,tatekae:document.getElementById('i-tatekae').checked,receiptNo:document.getElementById('i-receipt-no').value,receiptNotRequired:document.getElementById('i-no-receipt-req').checked,img:currentImageBase64}; const isEdit=!!editingId; if(isEdit) rs=rs.map(r=>r.id===editingId?data:r); else rs.push(data); localStorage.setItem(STORAGE_RECORDS,JSON.stringify(rs)); let m=getMaster(); if(!m.some(x=>x.item===data.item&&x.cat===data.cat&&x.detail===data.detail&&x.type===data.type)){ m.push({item:data.item,cat:data.cat,detail:data.detail,type:data.type,count:0}); saveMaster(m); } updateDashboard(); goBack(); // 保存後は前の画面へ戻る 
-    });
+    document.getElementById('kaikei-form').addEventListener('submit', function(e){ e.preventDefault(); const amt=parseInt(document.getElementById('i-amount').value.replace(/,/g,'')||0); if(amt<=0) return alert("金額を入力してください"); let rs=getRecords(); const data={id:editingId||Date.now(),date:document.getElementById('i-date').value,type:currentType,item:document.getElementById('i-item').value,detail:document.getElementById('i-detail').value,cat:document.getElementById('i-category').value,amount:amt,memo:document.getElementById('i-memo').value,tatekae:document.getElementById('i-tatekae').checked,receiptNo:document.getElementById('i-receipt-no').value,receiptNotRequired:document.getElementById('i-no-receipt-req').checked,img:currentImageBase64}; const isEdit=!!editingId; if(isEdit) rs=rs.map(r=>r.id===editingId?data:r); else rs.push(data); localStorage.setItem(STORAGE_RECORDS,JSON.stringify(rs)); let m=getMaster(); if(!m.some(x=>x.item===data.item&&x.cat===data.cat&&x.detail===data.detail&&x.type===data.type)){ m.push({item:data.item,cat:data.cat,detail:data.detail,type:data.type,count:0}); saveMaster(m); } updateDashboard(); goBack(); });
     window.openSelectionModal = (target) => { currentModalTarget = target; document.getElementById('selection-grid').innerHTML=''; document.getElementById('modal-manual-input').value = ''; const ms=getMaster().filter(x=>x.type===currentType); if(target==='item'){ [...new Set(ms.map(x=>x.item))].forEach(it=>{ const btn=document.createElement('button'); btn.className='btn'; btn.style.background='#eee'; btn.style.color='#333'; btn.innerText=it; btn.onclick=()=>{ document.getElementById('i-item').value=it; const f=ms.find(x=>x.item===it); if(f) document.getElementById('i-category').value=f.cat; closeSelectionModal(); }; document.getElementById('selection-grid').appendChild(btn); }); } else { const c=document.getElementById('i-item').value; ms.filter(x=>x.item===c&&x.detail).forEach(x=>{ const btn=document.createElement('button'); btn.className='btn'; btn.style.background='#eee'; btn.style.color='#333'; btn.innerText=x.detail; btn.onclick=()=>{ document.getElementById('i-detail').value=x.detail; closeSelectionModal(); }; document.getElementById('selection-grid').appendChild(btn); }); } document.getElementById('selection-modal').style.display='block'; };
     window.setManualValue = () => { const val = document.getElementById('modal-manual-input').value; if(!val) return; if(currentModalTarget==='item') document.getElementById('i-item').value=val; else document.getElementById('i-detail').value=val; closeSelectionModal(); };
     window.closeSelectionModal = () => document.getElementById('selection-modal').style.display='none';
@@ -419,6 +445,102 @@
     window.editMaster = (i) => { editingMasterIdx = i; let m = getMaster(); document.getElementById('me-item').value = m[i].item; document.getElementById('me-cat').value = m[i].cat; document.getElementById('me-detail').value = m[i].detail || ''; document.getElementById('master-edit-modal').style.display = 'block'; };
     window.saveEditedMaster = () => { let m = getMaster(); const ni = document.getElementById('me-item').value, nc = document.getElementById('me-cat').value, nd = document.getElementById('me-detail').value; if (!ni || !nc) return alert("項目名とカテゴリーは必須です"); m[editingMasterIdx].item = ni; m[editingMasterIdx].cat = nc; m[editingMasterIdx].detail = nd; saveMaster(m); document.getElementById('master-edit-modal').style.display = 'none'; openSettings(); };
     window.deleteMaster = (i) => { if(confirm('削除しますか？')){ let m=getMaster(); m.splice(i,1); saveMaster(m); openSettings(); } };
+
+    // --- 桜タップゲームロジック ---
+    let gameScore = 0, gameTime = 30, gameCombo = 0, gameActive = false, gameTimerInterval, gameSpawnTimeout;
+    function startTapGame() {
+        if(gameActive) return;
+        gameActive = true; gameScore = 0; gameTime = 30; gameCombo = 0;
+        document.getElementById('start-btn').style.display = 'none';
+        document.getElementById('game-score').innerText = "0";
+        document.getElementById('game-timer').innerText = "30";
+        document.getElementById('combo-display').innerText = "";
+        
+        gameTimerInterval = setInterval(() => {
+            gameTime--;
+            document.getElementById('game-timer').innerText = gameTime;
+            if(gameTime <= 0) endTapGame();
+        }, 1000);
+        spawnGameSakura();
+    }
+
+    function spawnGameSakura() {
+        if(!gameActive) return;
+        const area = document.getElementById('game-area');
+        const s = document.createElement('div');
+        s.className = 'game-sakura';
+        s.innerHTML = '🌸';
+        const size = 50;
+        const x = Math.random() * (area.clientWidth - size);
+        const y = Math.random() * (area.clientHeight - size);
+        s.style.left = x + 'px';
+        s.style.top = y + 'px';
+        
+        // タップ成功時の処理
+        s.onclick = (e) => {
+            e.stopPropagation();
+            gameCombo++;
+            gameScore += (10 + Math.floor(gameCombo/5)*5); // 5コンボごとにボーナス
+            document.getElementById('game-score').innerText = gameScore;
+            document.getElementById('combo-display').innerText = gameCombo + " COMBO!";
+            area.removeChild(s);
+        };
+
+        area.appendChild(s);
+
+        // 難易度調整：時間が進むほど出現が早まり、消えるのも早くなる
+        let spawnRate = 800 - (30 - gameTime) * 20; // 最終的に200ms
+        let vanishTime = 1200 - (30 - gameTime) * 30; // 最終的に300ms
+        if(spawnRate < 150) spawnRate = 150;
+        if(vanishTime < 300) vanishTime = 300;
+
+        setTimeout(() => {
+            if(s.parentNode === area) {
+                area.removeChild(s);
+                gameCombo = 0; // ミスでコンボリセット
+                document.getElementById('combo-display').innerText = "";
+            }
+        }, vanishTime);
+
+        gameSpawnTimeout = setTimeout(spawnGameSakura, spawnRate);
+    }
+
+    function endTapGame() {
+        gameActive = false;
+        clearInterval(gameTimerInterval);
+        clearTimeout(gameSpawnTimeout);
+        document.getElementById('start-btn').style.display = 'block';
+        document.getElementById('start-btn').innerText = "もう一度遊ぶ";
+        const area = document.getElementById('game-area');
+        const sakuras = area.getElementsByClassName('game-sakura');
+        while(sakuras[0]) area.removeChild(sakuras[0]);
+        
+        saveGameScore(gameScore);
+        alert("タイムアップ！ スコア: " + gameScore);
+    }
+
+    function saveGameScore(score) {
+        let ranks = JSON.parse(localStorage.getItem(STORAGE_GAME_RANK) || '[]');
+        ranks.push({score: score, date: new Date().toLocaleDateString()});
+        ranks.sort((a,b) => b.score - a.score);
+        ranks = ranks.slice(0, 3);
+        localStorage.setItem(STORAGE_GAME_RANK, JSON.stringify(ranks));
+        updateGameRanking();
+    }
+
+    function updateGameRanking() {
+        const ranks = JSON.parse(localStorage.getItem(STORAGE_GAME_RANK) || '[]');
+        const list = document.getElementById('game-rank-list');
+        if(ranks.length === 0) {
+            list.innerHTML = "記録はまだありません。";
+            return;
+        }
+        let html = "🏆 <b>歴代ランキング</b><br>";
+        ranks.forEach((r, i) => {
+            html += `${i+1}位: ${r.score}点 (${r.date})<br>`;
+        });
+        list.innerHTML = html;
+    }
 </script>
 </body>
 </html>
